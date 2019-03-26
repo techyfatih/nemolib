@@ -1,6 +1,9 @@
 nemolib
 =======
 
+This fork is to be used with the nemolibweb project here: https://github.com/techyfatih/nemolibweb/tree/master \
+To use, package this project, then put the JAR file in the `lib/` directory in the nemolibweb project.
+
 Description
 -----------
 The nemolib library includes tools specifically designed for executing the NemoProfile algorithm. Classes have also been designed with parallelization in mind.
