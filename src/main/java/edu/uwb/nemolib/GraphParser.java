@@ -1,8 +1,7 @@
 package edu.uwb.nemolib;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.*;
 
 /**
@@ -24,11 +23,28 @@ public class GraphParser {
 	 * @throws IOException if input file cannot be found
 	 */
 	public static Graph parse(String filename) throws IOException {
-		Map<String, Integer> nameToIndex = new HashMap<>();
-		Graph output = new Graph();
+		return parse(new BufferedReader(new FileReader(filename)));
+	}
+
+	/**
+	 * Parses an input stream into a Graph object.
+	 * @param is input stream containing the edge data
+	 * @return a Graph object with the correct mapping
+	 * @throws IOException if an I/O error occurred while reading the input stream
+	 */
+	public static Graph parse(InputStream is) throws IOException {
+		return parse(new BufferedReader(new InputStreamReader(is)));
+	}
+
+	/**
+	 * Private helper method for reading an input stream into a Graph object.
+	 * @param reader BufferedReader object containing the edge data
+	 * @return a Graph object with the correct mapping
+	 * @throws IOException if an I/O error occurred while reading the input stream
+	 */
+	private static Graph parse(BufferedReader reader) throws IOException {
 		// we read in all the data at once only so we can easily randomize it
 		// with Collections.shuffle()
-		BufferedReader reader = new BufferedReader(new FileReader(filename));
 		List<String> lines = new ArrayList<>();
 		String currentLine = reader.readLine();
 		while (currentLine != null) {
@@ -37,6 +53,17 @@ public class GraphParser {
 		}
 		reader.close();
 
+		return parse(lines);
+	}
+
+	public static Graph parse(List<String> lines) {
+		if (lines.isEmpty()) {
+			return null;
+		}
+
+		Map<String, Integer> nameToIndex = new HashMap<>();
+		Graph output = new Graph();
+
 		// avoid clustering (data collection bias) by randomly parsing the
 		// input lines of data
 		Collections.shuffle(lines);
@@ -44,6 +71,9 @@ public class GraphParser {
 		String delimiters = "\\s+"; // one or more whitespace characters
 		for (String line:lines) {
 			String[] edge = line.split(delimiters);
+			if (edge.length != 2) {
+				return null; // invalid graph format
+			}
 			int fromIndex = output.getOrCreateIndex(edge[0], nameToIndex);
 			int toIndex   = output.getOrCreateIndex(edge[1], nameToIndex);
 
@@ -54,5 +84,6 @@ public class GraphParser {
 			}
 		}
 		return output;
+
 	}
 }

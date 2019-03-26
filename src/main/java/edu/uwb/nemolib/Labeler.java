@@ -1,6 +1,9 @@
 package edu.uwb.nemolib;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -19,10 +22,10 @@ import java.util.Set;
 public final class Labeler {
 
 	// class variable
-	static int instanceCounter = 0;
-	
+	private static int instanceCounter = 0;
+
+    // TODO implement labelg Nauty algorithm in Java so below fields and functions can be removed
     // labelg program options
-    private static final String labelGPath = "src/main/resources/labelg";
     private static final int invariant = 3;
     private static final int mininvarlevel = 1;
     private static final int maxinvarlevel = 100;
@@ -35,6 +38,24 @@ public final class Labeler {
     private final String inputFilename;
     private final String outputFilename;
     private final String[] args;
+
+
+    private static final String labelgFilename = System.getProperty("os.name").toLowerCase().contains("win") ? "labelg.exe" : "labelg";
+
+    private static void extractLabelg() throws IOException {
+        File program = new File(labelgFilename);
+        if (!program.isFile()) {
+            InputStream is = Labeler.class.getClassLoader().getResourceAsStream(labelgFilename);
+            if (is == null) {
+                throw new IOException("labelg program not found");
+            }
+            Files.copy(is, Paths.get(labelgFilename), StandardCopyOption.REPLACE_EXISTING);
+
+            if (!program.setExecutable(true)) {
+                throw new IOException("could not make labelg program executable");
+            }
+        }
+    }
 
     /**
      * Construct a labeler object. By default, will search for the labelg
@@ -51,31 +72,12 @@ public final class Labeler {
     }
 
     private String[] getArgs() {
-        String[] args = {
-            labelGPath,
+        return new String[]{
+            "./" + labelgFilename,
             "-i" + invariant,
             "-I" + mininvarlevel + ":" + maxinvarlevel,
             inputFilename,
             outputFilename};
-        return args;
-    }
-
-    // TODO possibly remove this method; does not appear to be used
-    private Map<String, Set<Double>> g6toCanonical(Map<String,
-            Set<Double>> labelRelFreqsMap) {
-        Map<String, String> g6CanLabelMap =
-                getCanonicalLabels(labelRelFreqsMap.keySet());
-        Map<String, Set<Double>> result = new HashMap<>();
-        for (Map.Entry<String, Set<Double>> labelRelFreqs:
-                labelRelFreqsMap.entrySet()) {
-            String canLabel = g6CanLabelMap.get(labelRelFreqs.getKey());
-            Set<Double> currentRelFreqs = labelRelFreqs.getValue();
-            if (result.containsKey(canLabel)) {
-                currentRelFreqs.addAll(result.get(canLabel));
-            }
-            result.put(canLabel, currentRelFreqs);
-        }
-        return result;
     }
 
 	// Get canonical labels using the labelg program.
@@ -86,7 +88,7 @@ public final class Labeler {
 
 		// must use LinkedHashMap to preserve ordering
 		Map<String, String> results = new LinkedHashMap<>();
-		
+
         BufferedWriter writer = null;
         BufferedReader inputReader = null;
         BufferedReader outputReader = null;
@@ -100,6 +102,7 @@ public final class Labeler {
             }
             writer.close();
 
+            extractLabelg();
             Process labelg = Runtime.getRuntime().exec(args);
 
             // close output stream, input stream & error stream
